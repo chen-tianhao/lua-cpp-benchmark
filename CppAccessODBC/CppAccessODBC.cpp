@@ -1,3 +1,4 @@
+#include <sstream>
 #include <iostream>
 #include <string>
 #include <windows.h>
@@ -38,12 +39,12 @@ int main() {
     retCode = SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hDbc);
     checkError(retCode, hDbc, SQL_HANDLE_DBC);
 
-    // Use std::string to define the DSN and SQL queries
-    std::string dsn = "DSN=YourSQLiteDSN;";
-    std::wstring wdsn(dsn.begin(), dsn.end()); // Convert to std::wstring
+    // Use std::string to define the connection string with driver and database path
+    std::string connectionString = "DRIVER={SQLite3 ODBC Driver};DATABASE=path_to_your_database.sqlite;";
+    std::wstring wConnectionString(connectionString.begin(), connectionString.end());
 
-    // Connect to the database using DSN
-    retCode = SQLDriverConnect(hDbc, NULL, (SQLWCHAR*)wdsn.c_str(), SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE);
+    // Connect to the database using connection string
+    retCode = SQLDriverConnect(hDbc, NULL, (SQLWCHAR*)wConnectionString.c_str(), SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE);
     checkError(retCode, hDbc, SQL_HANDLE_DBC);
 
     // Allocate a statement handle
@@ -51,21 +52,34 @@ int main() {
     checkError(retCode, hStmt, SQL_HANDLE_STMT);
 
     // Create a table using std::string and convert to wide string
-    std::string createTableSQL = "CREATE TABLE IF NOT EXISTS COMPANY(ID INT, NAME TEXT, AGE INT, ADDRESS TEXT, SALARY REAL);";
-    std::wstring wCreateTableSQL(createTableSQL.begin(), createTableSQL.end());
+    std::string recreateTableSQL = "DROP TABLE IF EXISTS COMPANY;"
+        "CREATE TABLE IF NOT EXISTS COMPANY("
+        "ID INT PRIMARY KEY     NOT NULL,"
+        "NAME           TEXT    NOT NULL,"
+        "AGE            INT     NOT NULL,"
+        "ADDRESS        CHAR(50),"
+        "SALARY         REAL );";
+    std::wstring wCreateTableSQL(recreateTableSQL.begin(), recreateTableSQL.end());
 
     retCode = SQLExecDirect(hStmt, (SQLWCHAR*)wCreateTableSQL.c_str(), SQL_NTS);
+    std::cout << "Recreate table." << std::endl;
     checkError(retCode, hStmt, SQL_HANDLE_STMT);
 
     // Insert data using std::string and convert to wide string
-    std::string insertSQL = "INSERT INTO COMPANY (ID, NAME, AGE, ADDRESS, SALARY) VALUES (1, 'John', 30, 'California', 10000.0);";
+    std::stringstream ss;
+    for (int i = 0; i < 1; i++)
+    {
+        ss << "INSERT INTO COMPANY (ID, NAME, AGE, ADDRESS, SALARY) VALUES(" << i << ",'" << i << "','" << i << "','" << i << "','" << i << "');" << std::endl;
+    }
+    std::string insertSQL = ss.str();
     std::wstring wInsertSQL(insertSQL.begin(), insertSQL.end());
 
     retCode = SQLExecDirect(hStmt, (SQLWCHAR*)wInsertSQL.c_str(), SQL_NTS);
+    std::cout << "Insert records." << std::endl;
     checkError(retCode, hStmt, SQL_HANDLE_STMT);
 
     // Query data using std::string and convert to wide string
-    std::string selectSQL = "SELECT ID, NAME, AGE, ADDRESS, SALARY FROM COMPANY;";
+    std::string selectSQL = "SELECT * FROM COMPANY;";
     std::wstring wSelectSQL(selectSQL.begin(), selectSQL.end());
 
     retCode = SQLExecDirect(hStmt, (SQLWCHAR*)wSelectSQL.c_str(), SQL_NTS);
