@@ -128,7 +128,7 @@ int ReadTable(sqlite3* db)
 
 int main() {
     sqlite3* db;
-    int rowNumber = 1000;
+    int rowNumber = 500;
     int runNumber = 10;
 
     // 打开数据库连接，如果数据库不存在则创建一个新的数据库

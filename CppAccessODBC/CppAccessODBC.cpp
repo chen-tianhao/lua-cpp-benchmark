@@ -44,7 +44,7 @@ int InsertRows(SQLHSTMT hStmt, int rowNum)
 {
     int retCode = 0;
     // Execute each INSERT statement individually
-    for (int i = 1; i <= 1000; ++i) {
+    for (int i = 1; i <= rowNum; ++i) {
         std::stringstream ss;
         ss << "INSERT INTO COMPANY (ID, NAME, AGE, ADDRESS, SALARY) VALUES(" << i << ",'" << i << "','" << i << "','" << i << "','" << i << "');" << std::endl;
         std::string insertSQL = ss.str();
@@ -62,7 +62,7 @@ int InsertRowsTransaction(SQLHSTMT hStmt, SQLHDBC hDbc, int rowNum)
     // Turn off auto-commit mode for transaction handling
     SQLSetConnectAttr(hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_OFF, 0);
     // Execute each INSERT statement individually
-    for (int i = 1; i <= 1000; ++i) {
+    for (int i = 1; i <= rowNum; ++i) {
         std::stringstream ss;
         ss << "INSERT INTO COMPANY (ID, NAME, AGE, ADDRESS, SALARY) VALUES(" << i << ",'" << i << "','" << i << "','" << i << "','" << i << "');" << std::endl;
         std::string insertSQL = ss.str();
@@ -142,7 +142,7 @@ int main()
     retCode = SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt);
     checkError(retCode, hStmt, SQL_HANDLE_STMT);
 
-    int rowNumber = 1000;
+    int rowNumber = 500;
     int runNumber = 10;
 
     double totalTimeCose = 0;
