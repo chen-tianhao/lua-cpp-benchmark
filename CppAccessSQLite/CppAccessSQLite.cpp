@@ -55,9 +55,6 @@ int InsertRows(sqlite3* db, int rowNum)
         std::cerr << "SQL error: " << errMsg << std::endl;
         sqlite3_free(errMsg);
     }
-    else {
-        std::cout << "Records created successfully" << std::endl;
-    }
     return rc;
 }
 
@@ -92,9 +89,6 @@ int InsertRowsTransaction(sqlite3* db, int rowNum)
         sqlite3_exec(db, "ROLLBACK;", 0, 0, &errMsg);
         sqlite3_close(db);
         return rc;
-    }
-    else {
-        std::cout << "Records created successfully" << std::endl;
     }
 
     // 提交事务
