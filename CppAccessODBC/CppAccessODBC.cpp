@@ -131,7 +131,7 @@ int main()
     checkError(retCode, hDbc, SQL_HANDLE_DBC);
 
     // Use std::string to define the connection string with driver and database path
-    std::string connectionString = "DRIVER={SQLite3 ODBC Driver};DATABASE=path_to_your_database.sqlite;";
+    std::string connectionString = "DRIVER={SQLite3 ODBC Driver};DATABASE=example.db;";
     std::wstring wConnectionString(connectionString.begin(), connectionString.end());
 
     // Connect to the database using connection string
