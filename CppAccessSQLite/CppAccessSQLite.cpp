@@ -39,7 +39,7 @@ int CreatTable(sqlite3* db)
     return rc;
 }
 
-int InsertRowsTransaction(sqlite3* db, int rowNum)
+int BatchInsert(sqlite3* db, int rowNum)
 {
     char* errMsg = 0;
 
@@ -84,7 +84,7 @@ int InsertRowsTransaction(sqlite3* db, int rowNum)
     return rc;
 }
 
-int InsertRows(sqlite3* db, int rowNum)
+int SingleInsert(sqlite3* db, int rowNum)
 {
     char* errMsg = 0;
     // 插入数据
@@ -120,11 +120,28 @@ int ReadTable(sqlite3* db, std::string key, int value)
     return rc;
 }
 
+int UpdateTable(sqlite3* db, double setValue, std::string key, int value)
+{
+    char* errMsg = 0;
+    std::string sqlSelectData = "UPDATE COMPANY SET SALARY = " + std::to_string(setValue) + " WHERE " + key + " = " + std::to_string(value) + ";";
+    //auto select_start = std::chrono::high_resolution_clock::now();
+    int rc = sqlite3_exec(db, sqlSelectData.c_str(), callbackWithoutShow, 0, &errMsg);
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+        return rc;
+    }
+    //auto select_end = std::chrono::high_resolution_clock::now();
+    //std::chrono::duration<double> select_elapsed = select_end - select_start;
+    //std::cout << "Select time: " << select_elapsed.count() << " seconds" << std::endl;
+    return rc;
+}
+
 int main() {
     sqlite3* db;
-    int rowNumber = 5000;
+    int rowNumber = 10000;
     int runNumberInsert = 1;
-    int runNumberSelect = 100;
+    int runNumberSelect = 10;
 
     // 打开数据库连接，如果数据库不存在则创建一个新的数据库
     int rc = sqlite3_open("example.db", &db);
@@ -136,29 +153,29 @@ int main() {
         std::cout << "Opened database successfully" << std::endl;
     }
 
-    // Insert with transaction
+    // Batch Insert
     double totalTimeCose = 0;
     for (int i = 0; i < runNumberInsert; i++)
     {
         CreatTable(db);
         auto insertStart = std::chrono::high_resolution_clock::now();
-        InsertRowsTransaction(db, rowNumber);
+        BatchInsert(db, rowNumber);
         auto insertEnd = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> insert_elapsed = insertEnd - insertStart;
         std::cout << "Insert time: " << insert_elapsed.count() << " seconds" << std::endl;
         totalTimeCose += insert_elapsed.count();
     }
-    std::cout << "Averave insert time (transaction): " << totalTimeCose/runNumberInsert << " seconds" << std::endl;
+    std::cout << "Averave batch insert time: " << totalTimeCose/runNumberInsert << " seconds" << std::endl;
 
     // Read common
     auto readStart = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < runNumberSelect; i++)
     {
-        ReadTable(db, "AGE", runNumberSelect+100);
+        ReadTable(db, "AGE", runNumberSelect + 100);
     }
     auto readEnd = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> read_elapsed = readEnd - readStart;
-    std::cout << "Averave select time (common): " << read_elapsed.count() / runNumberInsert << " seconds" << std::endl;
+    std::cout << "Averave select time (common): " << read_elapsed.count() / runNumberSelect << " seconds" << std::endl;
 
     // Read by key
     auto readByKeyStart = std::chrono::high_resolution_clock::now();
@@ -168,21 +185,41 @@ int main() {
     }
     auto readByKeyEnd = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> read_by_key_elapsed = readByKeyEnd - readByKeyStart;
-    std::cout << "Averave select time (by key): " << read_by_key_elapsed.count() / runNumberInsert << " seconds" << std::endl;
+    std::cout << "Averave select time (by key): " << read_by_key_elapsed.count() / runNumberSelect << " seconds" << std::endl;
 
-    // Insert without transaction
+    // Update common
+    auto updateStart = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < runNumberSelect; i++)
+    {
+        UpdateTable(db, 88.8, "AGE", runNumberSelect + 100);
+    }
+    auto updateEnd = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> update_elapsed = updateEnd - updateStart;
+    std::cout << "Averave update time (common): " << update_elapsed.count() / runNumberSelect << " seconds" << std::endl;
+
+    // Update by key
+    auto updateByKeyStart = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < runNumberSelect; i++)
+    {
+        UpdateTable(db, 99.9, "ID", runNumberSelect + 100);
+    }
+    auto updateByKeyEnd = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> update_by_key_elapsed = updateByKeyEnd - updateByKeyStart;
+    std::cout << "Averave update time (by key): " << update_by_key_elapsed.count() / runNumberSelect << " seconds" << std::endl;
+
+    // Single Insert
     totalTimeCose = 0;
     for (int i = 0; i < runNumberInsert; i++)
     {
         CreatTable(db);
         auto insertStart = std::chrono::high_resolution_clock::now();
-        InsertRows(db, rowNumber);
+        SingleInsert(db, rowNumber);
         auto insertEnd = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> insert_elapsed = insertEnd - insertStart;
         std::cout << "Insert time: " << insert_elapsed.count() << " seconds" << std::endl;
         totalTimeCose += insert_elapsed.count();
     }
-    std::cout << "Averave insert time (non-transaction): " << totalTimeCose / runNumberInsert << " seconds" << std::endl;
+    std::cout << "Averave single insert time: " << totalTimeCose / runNumberInsert << " seconds" << std::endl;
 
     // 关闭数据库连接
     sqlite3_close(db);
