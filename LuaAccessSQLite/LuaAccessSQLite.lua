@@ -47,7 +47,7 @@ function BatchInsert()
 end
 
 function ReadTable(key, value)
-    local cursor, err = conn:execute("SELECT * FROM COMPANY WHERE" + key + " = " + value + ";")
+	local cursor, err = conn:execute("SELECT * FROM COMPANY WHERE " .. key .. " = " .. value .. ";")
     if not cursor then
         error("Failed to execute SELECT statement: " .. err)
     end
@@ -63,12 +63,10 @@ function ReadTable(key, value)
     end
     ]]
     cursor:close()
-
-    return read_end - read_start
 end
 
 function UpdateTable(setValue, key, value)
-    local cursor, err = conn:execute("UPDATE COMPANY SET SALARY = " + setValue + " WHERE " + key + " = " + value + ";")
+    local cursor, err = conn:execute("UPDATE COMPANY SET SALARY = " .. setValue .. " WHERE " .. key .. " = " .. value .. ";")
     if not cursor then
         error("Failed to execute SELECT statement: " .. err)
     end
@@ -83,9 +81,9 @@ function UpdateTable(setValue, key, value)
         row = cursor:fetch(row, "a")
     end
     ]]
-    cursor:close()
 end
 
+-- Batch Insert
 local total_insert = 0
 for i = 1, run_num_of_insert do
 	CreateTable()
@@ -97,6 +95,39 @@ for i = 1, run_num_of_insert do
 end
 print(string.format("Average batch insert time: %.6f seconds", total_insert / run_num_of_insert))
 
+-- Read common
+local read_start = socket.gettime()
+for i = 1, run_num_of_select do
+	ReadTable("AGE", run_num_of_select + 100);
+end
+local read_end = socket.gettime()
+print(string.format("Averave select time (common): %.6f seconds", (read_end - read_start) / run_num_of_select))
+
+-- Read by key
+local read_by_key_start = socket.gettime()
+for i = 1, run_num_of_select do
+	ReadTable("ID", run_num_of_select + 100);
+end
+local read_by_key_end = socket.gettime()
+print(string.format("Averave select time (by key): %.6f seconds", (read_by_key_end - read_by_key_start) / run_num_of_select))
+
+-- Update common
+local update_start = socket.gettime()
+for i = 1, run_num_of_select do
+	UpdateTable(88.8, "AGE", run_num_of_select + 100);
+end
+local update_end = socket.gettime()
+print(string.format("Averave update time (common): %.6f seconds", (update_end - update_start) / run_num_of_select))
+
+-- Update by key
+local update_by_key_start = socket.gettime()
+for i = 1, run_num_of_select do
+	UpdateTable(99.9, "ID", run_num_of_select + 100);
+end
+local update_by_key_end = socket.gettime()
+print(string.format("Averave update time (by key): %.6f seconds", (update_by_key_end - update_by_key_start) / run_num_of_select))
+
+-- Single Insert
 total_insert = 0
 for i = 1, run_num_of_insert do
 	CreateTable()

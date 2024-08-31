@@ -152,7 +152,7 @@ int main() {
     else {
         std::cout << "Opened database successfully" << std::endl;
     }
-
+    
     // Batch Insert
     double totalTimeCose = 0;
     for (int i = 0; i < runNumberInsert; i++)
