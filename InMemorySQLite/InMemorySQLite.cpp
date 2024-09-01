@@ -144,7 +144,7 @@ int main() {
     int runNumberSelect = 1;
 
     // 打开数据库连接，如果数据库不存在则创建一个新的数据库
-    int rc = sqlite3_open("example.db", &db);
+    int rc = sqlite3_open(":memory:", &db);
     if (rc) {
         std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
         return 1;
