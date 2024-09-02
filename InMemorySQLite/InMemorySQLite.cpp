@@ -141,7 +141,7 @@ int main() {
     sqlite3* db;
     int rowNumber = 10000;
     int runNumberInsert = 10;
-    int runNumberSelect = 1;
+    int runNumberSelect = 10;
 
     // 打开数据库连接，如果数据库不存在则创建一个新的数据库
     int rc = sqlite3_open(":memory:", &db);
