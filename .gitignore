@@ -69,3 +69,4 @@ LuaAccessSQLite/SimulationP3.db
 LuaAccessSQLite/SimulationP3-test.db
 CppAccessSQLite/example.db
 CppAccessSQLite/CppAccessSQLite.vcxproj.user
+LuaAccessSQLite/test.lua
