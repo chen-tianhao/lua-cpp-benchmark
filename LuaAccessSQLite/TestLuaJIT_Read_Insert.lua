@@ -1,12 +1,11 @@
-
 local cjson = require("cjson")
 print("=================require cjson=================")
 local sqlite3 = require("lsqlite3")
 print("=================require lsqlite3=================")
 
 
-local function open_db_create_table()
-    local db = sqlite3.open("SimulationP3.db")
+local function open_db_create_table(db_conn_str)
+    local db = sqlite3.open(db_conn_str)
     local create_table_sql = [=[
         CREATE TABLE IF NOT EXISTS JobList (
             vv_c  TEXT,
@@ -202,22 +201,21 @@ local function csv_to_db(filepath, db)
     return rows
 end
 
+local db_init = {}
 
-local function close_db(db)
+function db_init.Close_db(db)
     db:close()
 end
 
 
--- main program
-local db = open_db_create_table()
-local filepath = "F:\\Downloads\\GlobalTablesInPreviousSolution_2hr_Modified.csv"
-local filedata = csv_to_db(filepath, db)
-close_db(db)
-print("Data inserting complete")
+function db_init.Init_db()
+    local db = open_db_create_table("SimulationP3.db")
+    -- local db = open_db_create_table(":memory:")
+    local filepath = "F:\\Downloads\\GlobalTablesInPreviousSolution_2hr_Modified.csv"
+    local filedata = csv_to_db(filepath, db)
+    -- close_db(db)
+    print("Data inserting complete")
+    return db
+end
 
--- print results
---for i, row in ipairs(filedata) do
---    for j, cell in ipairs(row) do
---        print("Row " .. i .. ", Column " .. j .. ": ", type(cell) == "table" and cjson.encode(cell) or cell)
---    end
---end
+return db_init
