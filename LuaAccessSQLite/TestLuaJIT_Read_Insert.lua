@@ -1,8 +1,10 @@
+
+local cjson = require("cjson")
+print("=================require cjson=================")
 local sqlite3 = require("lsqlite3")
-local file = io.open("F:\\Downloads\\GlobalTablesInPreviousSolution_2hr_Modified.csv", "r")
+print("=================require lsqlite3=================")
 
 local db = sqlite3.open("SimulationP3.db")
-
 local create_table_sql = [=[
     CREATE TABLE IF NOT EXISTS JobList (
         vv_c  TEXT,
@@ -108,41 +110,109 @@ local sql_str = [=[
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ]=]
-local insert_sql = db:prepare(sql_str)
-if not insert_sql then
+local insert_operation = db:prepare(sql_str)
+if not insert_operation then
     print("Error preparing SQL: ", db:errmsg())
     return
 end
 
-local column_max = 75  -- set first N column to read
-local i=1
-for line in file:lines() do
-    if i <= 3 then
-        i = i + 1  -- skip first 3 lines (head)
-    else
-        local row = {}
-        local column_idx = 1
-
-        for cell in line:gmatch("([^,]*),?") do
-            if column_idx <= column_max then
-                if cell == "" then
-                    cell = nil
-                end
-                table.insert(row, cell)
-            end
-            column_idx = column_idx + 1
-        end
-
-        if #row == column_max then
-            insert_sql:bind_values(table.unpack(row))
-            insert_sql:step()
-            insert_sql:reset()
-        end
+local function splitCsvRow_v0(line)
+    local fields = {}
+    for field in line:gmatch("([^,]+)") do
+        table.insert(fields, field)
     end
+    return fields
 end
 
-insert_sql:finalize()
-db:close()
-file:close()
+local function splitCsvRow(line)
+    local fields = {}
+    local inQuotes = false
+    local field = ""
 
+    for char in line:gmatch(".") do
+        if char == "\"" then
+            inQuotes = not inQuotes  -- 遇到引号则切换状态
+        elseif char == "," and not inQuotes then
+            -- 如果遇到逗号且不在引号内，则是字段分隔符
+            table.insert(fields, field)
+            field = ""
+        else
+            field = field .. char
+        end
+    end
+
+    -- 添加最后一个字段
+    if field ~= "" then
+        table.insert(fields, field)
+    end
+
+    return fields
+end
+
+local function read_csv_with_json(filepath)
+    local rows = {}  -- store a single line of CSV data
+    --local file = csv.open(filepath)
+    local file = io.open(filepath, "r")
+    if not file then
+        print("Cannot open file: " .. filepath)
+        return nil
+    end
+
+    local max_column_num = 75
+    local i = 1
+    for row in file:lines() do
+        if i > 3 then
+            local parsed_row = {}
+            -- Pre-fill all cell in row with nil, to make sure all cell are filled
+            for j = 1, max_column_num do
+                parsed_row[j] = "nil"
+            end
+            
+            local fields = splitCsvRow(row)
+            for j, cell in ipairs(fields) do
+                --[[
+                -- Try to parse as JSON, keep the original string if not valid JSON
+                local success, json_object = pcall(cjson.decode, cell)
+                if success then
+                    print("[" .. i .. "," .. j .. "]: json: " .. cjson.encode(json_object))
+                    parsed_row[j] = json_object  -- Store as JSON if valid JSON
+                elseif cell == "" then
+                    print("[" .. i .. "," .. j .. "]: nil")
+                    parsed_row[j] = nil
+                else
+                    print("[" .. i .. "," .. j .. "]: data: " .. cell)
+                    parsed_row[j] = cell  -- Store original string if not valid JSON
+                end
+                ]]
+                parsed_row[j] = cell
+            end
+            table.insert(rows, parsed_row)  -- Insert parsed row into table
+            insert_operation:bind_values(table.unpack(parsed_row))
+            insert_operation:step()
+            insert_operation:reset()
+            print("==============> " .. i)
+        end
+        i = i + 1
+    end
+
+    file:close()
+    return rows
+end
+
+local function clean(insert_operation, db)
+    insert_operation:finalize()
+    db:close()
+end
+
+local filepath = "F:\\Downloads\\GlobalTablesInPreviousSolution_2hr_Modified.csv"
+local filedata = read_csv_with_json(filepath, insert_operation)
+
+clean(insert_operation, db)
 print("Data inserting complete")
+
+-- print results
+--for i, row in ipairs(filedata) do
+--    for j, cell in ipairs(row) do
+--        print("Row " .. i .. ", Column " .. j .. ": ", type(cell) == "table" and cjson.encode(cell) or cell)
+--    end
+--end
