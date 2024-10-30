@@ -165,7 +165,7 @@ local function csv_to_db(filepath, db)
     local i = 1
     for row in file:lines() do
         if i > 3 then  -- Skip the first 3 rows
-            if i == 94 then  -- If we only consider jobs for QC1, skip the rest
+            if i == 364 then  -- According to design (described in Readme.md) shoule be 360 rows in total
                 break
             end
             local parsed_row = {}
@@ -189,6 +189,9 @@ local function csv_to_db(filepath, db)
                     parsed_row[j] = cell  -- Store original string if not valid JSON
                 end
                 ]=]
+                if j == 15 and i%24 == 0 then  -- only 15 rows meet the status = "L" criteria, 360 / 15 = 24
+                    cell = "L"
+                end
                 parsed_row[j] = cell
             end
             table.insert(rows, parsed_row)  -- Insert parsed row into table, not used currently
@@ -212,8 +215,8 @@ end
 
 
 function db_init.Init_db()
-    local db = open_db_create_table("SimulationP3.db")
-    -- local db = open_db_create_table(":memory:")
+    -- local db = open_db_create_table("SimulationP3.db")
+    local db = open_db_create_table(":memory:")
     local filepath = "F:\\Downloads\\GlobalTablesInPreviousSolution_2hr_Modified.csv"
     local filedata = csv_to_db(filepath, db)
     -- close_db(db)
