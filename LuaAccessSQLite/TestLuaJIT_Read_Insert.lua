@@ -165,6 +165,9 @@ local function csv_to_db(filepath, db)
     local i = 1
     for row in file:lines() do
         if i > 3 then  -- Skip the first 3 rows
+            if i == 94 then  -- If we only consider jobs for QC1, skip the rest
+                break
+            end
             local parsed_row = {}
             -- Pre-fill all cell in row with nil, to make sure all cell are filled
             for j = 1, max_column_num do
