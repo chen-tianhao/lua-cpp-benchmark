@@ -127,7 +127,9 @@ local function splitCsvRow(line)
 end
 
 
-local function csv_to_db(filepath, db)
+local function csv_to_db_until_cap(filepath, db, cap, job_start_id)
+    local cap = cap or math.huge
+    local job_start_id = job_start_id or 1
     local rows = {}  -- store a all rows of CSV data
     local file = io.open(filepath, "r")
     if not file then
@@ -163,9 +165,10 @@ local function csv_to_db(filepath, db)
 
     local max_column_num = 75
     local i = 1
+    local job_id = job_start_id
     for row in file:lines() do
         if i > 3 then  -- Skip the first 3 rows
-            if i == 364 then  -- According to design (described in Readme.md) shoule be 360 rows in total
+            if i == cap then  -- According to design (described in Readme.md) shoule be 360 rows in total
                 break
             end
             local parsed_row = {}
@@ -189,6 +192,16 @@ local function csv_to_db(filepath, db)
                     parsed_row[j] = cell  -- Store original string if not valid JSON
                 end
                 ]=]
+                if j == 5 then
+                    cell = job_id
+                end
+                if j == 6 then
+                    cell = job_id
+                    job_id = job_id + 1
+                end
+                if j == 15 and i%24 == 1 then  -- only 15 rows meet the status = "L" criteria, 360 / 15 = 24
+                    cell = "L"
+                end
                 if j == 15 and i%24 == 0 then  -- only 15 rows meet the status = "L" criteria, 360 / 15 = 24
                     cell = "L"
                 end
@@ -201,10 +214,11 @@ local function csv_to_db(filepath, db)
         end
         i = i + 1  -- Increment row counter
     end
-
     stmt:finalize()
     file:close()
-    return rows
+    if i < cap then -- not met the cap, repeat inserting rows
+        csv_to_db_until_cap(filepath, db, cap-i, job_id)
+    end
 end
 
 local db_init = {}
@@ -215,10 +229,11 @@ end
 
 
 function db_init.Init_db()
-    -- local db = open_db_create_table("SimulationP3.db")
-    local db = open_db_create_table(":memory:")
+    local db = open_db_create_table("SimulationP3.db")
+    -- local db = open_db_create_table(":memory:")
     local filepath = "F:\\Downloads\\GlobalTablesInPreviousSolution_2hr_Modified.csv"
-    local filedata = csv_to_db(filepath, db)
+    -- csv_to_db_until_cap(filepath, db, 364)
+    csv_to_db_until_cap(filepath, db, 10016)
     -- close_db(db)
     print("Data inserting complete")
     return db
