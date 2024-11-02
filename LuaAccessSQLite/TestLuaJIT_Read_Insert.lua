@@ -228,12 +228,10 @@ function db_init.Close_db(db)
 end
 
 
-function db_init.Init_db()
-    local db = open_db_create_table("SimulationP3.db")
-    -- local db = open_db_create_table(":memory:")
+function db_init.Init_db(db_file, cap)
+    local db = open_db_create_table(db_file)
     local filepath = "F:\\Downloads\\GlobalTablesInPreviousSolution_2hr_Modified.csv"
-    -- csv_to_db_until_cap(filepath, db, 364)
-    csv_to_db_until_cap(filepath, db, 10016)
+    csv_to_db_until_cap(filepath, db, cap)
     -- close_db(db)
     print("Data inserting complete")
     return db
