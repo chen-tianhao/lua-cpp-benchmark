@@ -248,15 +248,15 @@ end
 
 
 local function test_case_2(db, num_of_transfer)
-    -- Read one col using index
-    my_db_init.create_small_table(db)
-    local sql_str_transfer = "insert into JobList_SmallTable select * from JobList where job_id_int <= " .. num_of_transfer
-	local select_start = socket.gettime()
-    db:exec(sql_str_transfer)
-	local select_end = socket.gettime()
+    local select_start = socket.gettime()
+    for i = 1, NUM_OF_ITER do
+        my_db_init.create_small_table(db)
+        local sql_str_transfer = "insert into JobList_SmallTable select * from JobList where job_id_int <= " .. num_of_transfer
+        db:exec(sql_str_transfer)
+    end
+    local select_end = socket.gettime()
     local transfer_time_cost = select_end - select_start
     print(string.format("test_case_2, transfer %d rows, time cost: %.6f seconds", num_of_transfer, transfer_time_cost))
-
     return transfer_time_cost
 end
 
