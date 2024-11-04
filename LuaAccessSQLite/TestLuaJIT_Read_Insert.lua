@@ -4,10 +4,16 @@ local sqlite3 = require("lsqlite3")
 print("=================require lsqlite3=================")
 
 
-local function open_db_create_table(db_conn_str)
+local function open_db(db_conn_str)
     local db = sqlite3.open(db_conn_str)
-    local create_table_sql = [=[
-        CREATE TABLE IF NOT EXISTS JobList (
+    return db
+end
+
+
+local function re_create_table(db, table_name)
+    local drop_table_sql = "DROP TABLE IF EXISTS " .. table_name
+    local ret = db:exec(drop_table_sql)
+    local create_table_sql = "CREATE TABLE " .. table_name .. [=[(
             vv_c  TEXT,
             qc_id  INTEGER,
             qc_seq_n  INTEGER,
@@ -88,10 +94,9 @@ local function open_db_create_table(db_conn_str)
     ]=]
     local ret = db:exec(create_table_sql)
     if not ret then
-        print("Error DB exec: ", db:errmsg())
+        print("Error DB create table %s: ", table_name, db:errmsg())
         return nil
     end
-    return db
 end
 
 
@@ -127,8 +132,11 @@ local function splitCsvRow(line)
 end
 
 
-local function csv_to_db_until_cap(filepath, db, cap, job_start_id)
+local function csv_to_db_until_cap(filepath, db, table_name, cap, job_start_id)
     local cap = cap or math.huge
+    if cap == 0 then
+        return
+    end
     local job_start_id = job_start_id or 1
     local rows = {}  -- store a all rows of CSV data
     local file = io.open(filepath, "r")
@@ -138,8 +146,7 @@ local function csv_to_db_until_cap(filepath, db, cap, job_start_id)
     end
 
     -- prepare SQL statement for repeat insertion
-    local sql_str = [=[
-        INSERT INTO JobList(vv_c, qc_id, qc_seq_n, job_seq_n, job_id, job_id_int, cntr_n, ht_type, cntr_wt, 
+    local sql_str = "INSERT INTO " .. table_name .. [=[(vv_c, qc_id, qc_seq_n, job_seq_n, job_id, job_id_int, cntr_n, ht_type, cntr_wt, 
             cntr_size, cntr_type, cntr_op_status, bay_position, cone_decone_i, status, hau_gate_in_time, 
             job_in_htme_i, lift_type, job_pairing_id, dual_cycle_i, pri_precedence, call_in_precedence, 
             wms_duration, mps_start_time_dt, mps_min_handling_duration, mps_actual_duration, pri_task_id, 
@@ -217,7 +224,7 @@ local function csv_to_db_until_cap(filepath, db, cap, job_start_id)
     stmt:finalize()
     file:close()
     if i < cap then -- not met the cap, repeat inserting rows
-        csv_to_db_until_cap(filepath, db, cap-i, job_id)
+        csv_to_db_until_cap(filepath, db, "JobList", cap-i, job_id)
     end
 end
 
@@ -227,11 +234,16 @@ function db_init.Close_db(db)
     db:close()
 end
 
+function db_init.create_small_table(db)
+    re_create_table(db, "JobList_SmallTable")
+end
 
-function db_init.Init_db(db_file, cap)
-    local db = open_db_create_table(db_file)
+function db_init.Init_db(db_file, cap, cap_small_table)
+    local db = open_db(db_file)
+    re_create_table(db, "JobList")
     local filepath = "F:\\Downloads\\GlobalTablesInPreviousSolution_2hr_Modified.csv"
-    csv_to_db_until_cap(filepath, db, cap)
+    csv_to_db_until_cap(filepath, db, "JobList", cap)
+    csv_to_db_until_cap(filepath, db, "JobList_SmallTable", cap_small_table)
     -- close_db(db)
     print("Data inserting complete")
     return db

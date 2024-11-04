@@ -247,6 +247,20 @@ local function test_case_1(db)
 end
 
 
+local function test_case_2(db, num_of_transfer)
+    -- Read one col using index
+    my_db_init.create_small_table(db)
+    local sql_str_transfer = "insert into JobList_SmallTable select * from JobList where job_id_int <= " .. num_of_transfer
+	local select_start = socket.gettime()
+    db:exec(sql_str_transfer)
+	local select_end = socket.gettime()
+    local transfer_time_cost = select_end - select_start
+    print(string.format("test_case_2, transfer %d rows, time cost: %.6f seconds", num_of_transfer, transfer_time_cost))
+
+    return transfer_time_cost
+end
+
+
 function G_test_case_1(db)
     local results = {}
     for i = 1, NUM_OF_RUNS do
@@ -261,11 +275,28 @@ function G_test_case_1(db)
 end
 
 
-local db = my_db_init.Init_db(":memory:", 364)
+function G_test_case_2(db)
+    local results = {}
+    for i = 1, NUM_OF_RUNS do
+        local result = {}
+        local transfer_1 = test_case_2(db, 1)
+        local transfer_10 = test_case_2(db, 10)
+        local transfer_100 = test_case_2(db, 100)
+        result.col_B = transfer_1
+        result.col_C = transfer_10
+        result.col_D = transfer_100
+        table.insert(results, result)
+    end
+    write_result_to_csv("my_outcome.csv", "a", ",Transfer 1 row, Transfer 10 rows, Transfer 100 rows", results)
+end
+
+
+local db = my_db_init.Init_db(DB_IN_MEMORY, 364, 0)
 G_test_case_0(db)
 my_db_init.Close_db(db)
 
-local db = my_db_init.Init_db(":memory:", 10016)
+local db = my_db_init.Init_db(DB_IN_MEMORY, 10016, 0)
 G_test_case_1(db)
+G_test_case_2(db)
 my_db_init.Close_db(db)
 
